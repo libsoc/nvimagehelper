@@ -235,14 +235,14 @@ echo ""
 		    #echo $tags
 	var_markup="**"
 	var_headline="$headline"
-	socialtext="$var_markup$headline$var_markup
+socialtext="$var_markup$headline$var_markup
 
-	«$kurztext_ende (...)» 
-	[Link in Bio]
+«$kurztext_ende (...)» 
+[Link in Bio]
 
-	$URL
+$URL
 
-	$tags"
+$tags"
 	zenity --info --width 300 --height 300 --text "$socialtext"
       }
 
