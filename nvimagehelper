@@ -1,1 +1,21 @@
+#!/bin/bash
 
+clear
+echo "-----------------------------------------------------------------------------------------------------------"
+echo -e "---------------------------------------------" "\e[1mNV Image Helper\e[0m" "---------------------------------------------"
+echo "-----------------------------------------------------------------------------------------------------------"
+echo ""
+	#GLOBALE VARIABLEN
+	tmp_folder=/home/dirk/instascript/tmp
+	template_folder=/home/dirk/instascript/template
+	output_folder=/home/dirk/instascript/fertig
+	working_directory=/home/dirk/instascript #dort ist das script dominantcolor
+
+	#XPATH
+	#Wenn die Lucys-Seite geupdated wird, dann sollten diese Xpath-Pfade angepasst werden
+	xpath_header="/html/body/div[1]/div[2]/div/div/article/header/h1/text()"
+	xpath_bild="/html/body/div[1]/div[2]/div/div/article/div[1]/figure/a/img/@src"
+	xpath_youtube="/html/body/div[1]/div[2]/div/div/article/div[1]/div[1]/iframe/@src"
+	xpath_absatz1="/html/body/div[1]/div[2]/div/div/article/div[1]/p[1]"
+	xpath_absatz2="/html/body/div[1]/div[2]/div/div/article/div[1]/p[2]"
+	xpath_tags="/html/body/div[1]/div[2]/div/div/article/div[2]/ul"
