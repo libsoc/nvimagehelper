@@ -140,3 +140,125 @@ echo ""
 	  echo $kurztext | head -c $zeichenzahl > "$tmp_folder"/kurztext.txt
 	  read kurztext < "$tmp_folder"/kurztext.txt
 	}
+
+  # ---
+  # 'get_ausgabename' ermittelt den Dateinamen aus der Überschrift
+  # ---
+	get_ausgabename () {
+	  tr -d ' ' < "$tmp_folder"/ueberschrift.txt > "$tmp_folder"/filename.txt
+	  read ausgabename < "$tmp_folder"/filename.txt
+	}
+
+  # ---
+  # 'build_seite1' Erzeugt das erste von zwei Instagram-Bildern (mit Überschrift)
+  # ---
+	build_seite1 () {
+
+	  echo "Seite 1 wird erstellt"
+	  echo ""
+
+		  font="FreeSans-Fett"
+		  textausrichtung="NorthWest" #"NorthEast" für rechtsbündig
+		  textfarbe="white"
+		  schattenfarbe="black"
+		  geo_text="+30+50"
+		  geo_schatten="+35+55"
+	  
+	  #Bringt das Ausgangsbild auf eine Mindestgröße von 1080 auf Länge und Breite (ignoriert und schneidet Überlappungen):
+	  convert "$tmp_folder"/bilddownload.* -resize 1080x1080\^ "$tmp_folder"/resize.png
+
+	  #Setzt resize.png und das insta-template.png zusammen auf eine Größe von 1080 x 1080 px
+	  convert "$tmp_folder"/resize.png "$template_folder"/insta-template.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/resz-temp.png
+	  
+	  # Schwarzer teil der Überschrift (quasi Schlagschatten) wird geschrieben:
+	  convert "$tmp_folder"/resz-temp.png -background transparent -fill $schattenfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_schatten -composite "$tmp_folder"/output_without.png
+
+	  # Fügt dem Bild die Überschrift (headline) hinzu die Anfangs definiert wurde, und speichert es ab wie der Ausgabename definiert wurde:
+	  convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1.png
+
+	}
+
+  # ---
+  # 'build_seite2' erzeugt das zweite von zwei Instagram-Bildern (mit Abstract-Text)
+  # ---
+	build_seite2 () {
+
+	  echo "Seite 2 wird erstellt"
+	  echo ""
+
+	  #Die Variable "farbe" wird durch das Skript "dominantcolor" gesetzt.
+		farbe="$("$working_directory"/dominantcolor "$tmp_folder"/resize.png)"
+
+	  #Der Farblayer wird erzeugt
+	  convert "$tmp_folder"/resize.png -alpha set -fill "$farbe" -draw 'color 0,0 reset' -gravity center -crop 1080x1080+0+0 "$tmp_folder"/farblayer.png
+
+	  # Layer wird transparent gemacht
+	  convert "$tmp_folder"/farblayer.png -alpha set -channel A -evaluate Multiply 0.75 +channel "$tmp_folder"/opacity.png
+
+	  # Transparenter Layer wird auf resize.png gelegt
+	  convert "$tmp_folder"/resize.png "$tmp_folder"/opacity.png -composite -crop 1080x1080+0+0 "$tmp_folder"/p2overlay.png
+
+	  # template wird auf die layer gelegt
+	  convert "$tmp_folder"/p2overlay.png "$template_folder"/insta-template.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/p2plustemp.png
+
+
+	  convert "$tmp_folder"/p2plustemp.png -background transparent -fill white -gravity center -interline-spacing 5 -font FreeSans-Fett -size 970x890 caption:\\"«$kurztext (...)» \n\n\[Link in Bio]" -geometry +0-25 -composite "$output_folder"/"$ausgabename"_2.png
+	}
+
+  # ---
+  # 'social_text' erzeugt den notwendigen Beschreibungstext plus Link, Tags usw. Für Insta und Telegram
+  # ---
+	social_text () {
+
+	  cat "$tmp_folder"/kurztext.txt | sed 's/&nbsp;/ /g; s/&amp;/\&/g; s/&lt;/\</g; s/&gt;/\>/g; s/&quot;/\"/g; s/#&#39;/\'"'"'/g; s/&ldquo;/\"/g; s/&rdquo;/\"/g;' > "$tmp_folder"/kurztext_ende.txt
+	  #Kosmetische verbesserung. Macht z.B. dass aus &amp; ein normales & Zeichen wird.
+
+	  read kurztext_ende < "$tmp_folder"/kurztext_ende.txt
+
+	    # Tags werden von der Webseite geladen:
+	    wget -q -O - $URL | xmllint --html --xpath $xpath_tags - 2>/dev/null > "$tmp_folder"/tags.txt
+	    # HTML Tags und Leerzeichen innerhalb der Tags werden umständlich mit sed entfernt.
+		cat "$tmp_folder"/tags.txt | \
+		sed -E 's/<a[^>]*>([^<]*)<\/a[^>]*>/\1/g' | \
+		sed -E 's/<li>/#/g' | \
+		sed -E 's/<ul>//g' | \
+		sed -E 's/ //g' | \
+		sed -E 's/<\/li>/ /g' | \
+		sed -E 's/<\/ul>//g' > "$tmp_folder"/tags2.txt
+		  read tags < "$tmp_folder"/tags2.txt
+		    #echo **$headline**
+		    #echo ""
+		    #echo "«"$kurztext_ende"(...)» [Link in Bio]"
+		    #echo ""
+		    #echo $URL
+		    #echo ""
+		    #echo $tags
+	var_markup="**"
+	var_headline="$headline"
+	socialtext="$var_markup$headline$var_markup
+
+	«$kurztext_ende (...)» 
+	[Link in Bio]
+
+	$URL
+
+	$tags"
+	zenity --info --width 300 --height 300 --text "$socialtext"
+      }
+
+# ----------------------------------------------------------------------------------------------------------- 
+# Aufruf der Funktionen durch verschiedene Schleifen
+# ----------------------------------------------------------------------------------------------------------- 
+
+#auto_url
+URL=https://lucys-magazin.com/wolf-dieter-storl-im-musikvideo-gwydion/
+url_check
+get_bild
+get_headline
+get_kurztext
+get_ausgabename
+build_seite1
+#build_seite1fix
+build_seite2
+#build_seite2fix
+social_text
