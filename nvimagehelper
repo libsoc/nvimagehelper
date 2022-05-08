@@ -208,7 +208,7 @@ echo ""
   # ---
 	build_seite2 () {
 
-	  echo "Seite 2 wird erstellt"
+	  echo "Seite 2 wird erstellt (Transparenz: $1)"
 	  echo ""
 
 	  #Die Variable "farbe" wird durch das Skript "dominantcolor" gesetzt.
