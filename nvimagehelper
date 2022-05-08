@@ -164,18 +164,33 @@ echo ""
 		  geo_text="+30+50"
 		  geo_schatten="+35+55"
 	  
-	  #Bringt das Ausgangsbild auf eine Mindestgröße von 1080 auf Länge und Breite (ignoriert und schneidet Überlappungen):
-	  convert "$tmp_folder"/bilddownload.* -resize 1080x1080\^ "$tmp_folder"/resize.png
+	  # Bringt das Ausgangsbild auf eine Mindestgröße von 1080 auf Länge und Breite (ignoriert und schneidet Überlappungen):
+	     convert "$tmp_folder"/bilddownload.* -resize 1080x1080\^ "$tmp_folder"/resize.png
 
-	  #Setzt resize.png und das insta-template.png zusammen auf eine Größe von 1080 x 1080 px
-	  convert "$tmp_folder"/resize.png "$template_folder"/insta-template.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/resz-temp.png
+	  # Setzt resize.png und das insta-template.png zusammen auf eine Größe von 1080 x 1080 px
+	     convert "$tmp_folder"/resize.png "$template_folder"/insta-template.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/resz-temp.png
 	  
 	  # Schwarzer teil der Überschrift (quasi Schlagschatten) wird geschrieben:
-	  convert "$tmp_folder"/resz-temp.png -background transparent -fill $schattenfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_schatten -composite "$tmp_folder"/output_without.png
+	     convert "$tmp_folder"/resz-temp.png -background transparent -fill $schattenfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_schatten -composite "$tmp_folder"/output_without.png
 
 	  # Fügt dem Bild die Überschrift (headline) hinzu die Anfangs definiert wurde, und speichert es ab wie der Ausgabename definiert wurde:
-	  convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1.png
-
+	     convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1.png
+       # -- Einschub fix:
+       
+       	  # Das Beitragsbild wird horizontal skaliert (Höhe < 1080; notwendig, falls das Bild sehr viel breiter als hoch ist):
+	     convert "$tmp_folder"/bilddownload.* -resize 1080x "$tmp_folder"/resize2.png 
+	     
+	  # Hintergrundbild (abgedunkelt und verschwommen als Hintergrund für horizontales Bild):
+	     convert "$tmp_folder"/bilddownload.* -resize 2080x2080\^ -blur 0x8 -brightness-contrast -15 "$tmp_folder"/resize_horiz_blur.png  
+	  
+	  # Horizontales Beitragsbild wird zentriert in 1080x1080 Bild (horizlayer.png) eingebaut.  
+	     convert "$tmp_folder"/resize_horiz_blur.png "$tmp_folder"/resize2.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/horizlayer.png
+	  # Setzt horizlayer.png und das insta-template.png zusammen auf eine Größe von 1080 x 1080 px
+	     convert "$tmp_folder"/horizlayer.png "$template_folder"/insta-template.png -gravity center -composite "$tmp_folder"/resz-temp2.png
+	  # Schwarzer Teil der Überschrift (quasi Schlagschatten) wird geschrieben:
+	     convert "$tmp_folder"/resz-temp2.png -background transparent -fill $schattenfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_schatten -composite "$tmp_folder"/output_without.png
+	  # Fügt dem Bild die Überschrift (headline) hinzu die Anfangs definiert wurde, und speichert es ab wie der Ausgabename definiert wurde.
+	     convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1fix.png 
 	}
 
   # ---
