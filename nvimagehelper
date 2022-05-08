@@ -175,7 +175,8 @@ echo ""
 
 	  # Fügt dem Bild die Überschrift (headline) hinzu die Anfangs definiert wurde, und speichert es ab wie der Ausgabename definiert wurde:
 	     convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1.png
-       # -- Einschub fix:
+       
+       # -- Horizontal-fix:
        
        	  # Das Beitragsbild wird horizontal skaliert (Höhe < 1080; notwendig, falls das Bild sehr viel breiter als hoch ist):
 	     convert "$tmp_folder"/bilddownload.* -resize 1080x "$tmp_folder"/resize2.png 
@@ -190,7 +191,7 @@ echo ""
 	  # Schwarzer Teil der Überschrift (quasi Schlagschatten) wird geschrieben:
 	     convert "$tmp_folder"/resz-temp2.png -background transparent -fill $schattenfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_schatten -composite "$tmp_folder"/output_without.png
 	  # Fügt dem Bild die Überschrift (headline) hinzu die Anfangs definiert wurde, und speichert es ab wie der Ausgabename definiert wurde.
-	     convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1fix.png 
+	     convert "$tmp_folder"/output_without.png -background transparent -fill $textfarbe -gravity $textausrichtung -font $font -size 670x200 caption:"$headline" -geometry $geo_text -composite "$output_folder"/"$ausgabename"_1hz.png 
 	}
 
   # ---
