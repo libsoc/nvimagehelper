@@ -282,6 +282,7 @@ get_headline
 get_kurztext
 get_ausgabename
 build_seite1
+colordominant
 build_seite2 "$farbe"
 build_seite2 "#000000"
 social_text
