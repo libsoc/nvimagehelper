@@ -194,6 +194,15 @@ echo ""
 	}
 
   # ---
+  # 'colordominant' ermittelt die dominierende Farbe des Beitragsbildes und speichert sie in die Variable "farbe"
+  # ---
+	colordominant () {
+	farbe="$("$working_directory"/dominantcolor "$tmp_folder"/resize.png)"
+	echo "die dominante farbe wurde ermittelt"
+	echo ""
+	}
+
+  # ---
   # 'build_seite2' erzeugt das zweite von zwei Instagram-Bildern (mit Abstract-Text)
   # ---
 	build_seite2 () {
@@ -205,7 +214,7 @@ echo ""
 		farbe="$("$working_directory"/dominantcolor "$tmp_folder"/resize.png)"
 
 	  #Der Farblayer wird erzeugt
-	  convert "$tmp_folder"/resize.png -alpha set -fill "$farbe" -draw 'color 0,0 reset' -gravity center -crop 1080x1080+0+0 "$tmp_folder"/farblayer.png
+	  convert "$tmp_folder"/resize.png -alpha set -fill "$1" -draw 'color 0,0 reset' -gravity center -crop 1080x1080+0+0 "$tmp_folder"/farblayer.png
 
 	  # Layer wird transparent gemacht
 	  convert "$tmp_folder"/farblayer.png -alpha set -channel A -evaluate Multiply 0.75 +channel "$tmp_folder"/opacity.png
@@ -216,8 +225,8 @@ echo ""
 	  # template wird auf die layer gelegt
 	  convert "$tmp_folder"/p2overlay.png "$template_folder"/insta-template.png -gravity center -crop 1080x1080+0+0 -composite "$tmp_folder"/p2plustemp.png
 
-
-	  convert "$tmp_folder"/p2plustemp.png -background transparent -fill white -gravity center -interline-spacing 5 -font FreeSans-Fett -size 970x890 caption:\\"«$kurztext (...)» \n\n\[Link in Bio]" -geometry +0-25 -composite "$output_folder"/"$ausgabename"_2.png
+	  # Kurztext wird auf das Bild geschrieben und Bild wird gespeichert:
+	  convert "$tmp_folder"/p2plustemp.png -background transparent -fill white -gravity center -interline-spacing 5 -font FreeSans-Fett -size 970x890 caption:\\"«$kurztext (...)» \n\n\[Link in Bio]" -geometry +0-25 -composite "$output_folder"/"$ausgabename"_2"$1".png
 	}
 
   # ---
@@ -273,7 +282,6 @@ get_headline
 get_kurztext
 get_ausgabename
 build_seite1
-#build_seite1fix
-build_seite2
-#build_seite2fix
+build_seite2 "$farbe"
+build_seite2 "#000000"
 social_text
