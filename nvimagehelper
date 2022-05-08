@@ -1,4 +1,6 @@
 #!/bin/bash
+# Erstellt Instagram-Bilder (evtl. auch andere Social-Media Bilder) aus Wordpress-Artikeln von lucys-magazin.com
+# Erweiterung auf andere Wordpress-Blogs ist möglich.
 
 clear
 echo "-----------------------------------------------------------------------------------------------------------"
@@ -6,10 +8,10 @@ echo -e "---------------------------------------------" "\e[1mNV Image Helper\e[
 echo "-----------------------------------------------------------------------------------------------------------"
 echo ""
 	#GLOBALE VARIABLEN
-	tmp_folder=/home/dirk/instascript/tmp
-	template_folder=/home/dirk/instascript/template
-	output_folder=/home/dirk/instascript/fertig
-	working_directory=/home/dirk/instascript #dort ist das script dominantcolor
+	tmp_folder=$HOME/nvimagehelper/tmp
+	template_folder=$HOME/nvimagehelper/template
+	output_folder=$HOME/nvimagehelper/fertig
+	working_directory=$HOME/nvimagehelper #dort ist das script dominantcolor
 
 	#XPATH
 	#Wenn die Lucys-Seite geupdated wird, dann sollten diese Xpath-Pfade angepasst werden
@@ -19,3 +21,122 @@ echo ""
 	xpath_absatz1="/html/body/div[1]/div[2]/div/div/article/div[1]/p[1]"
 	xpath_absatz2="/html/body/div[1]/div[2]/div/div/article/div[1]/p[2]"
 	xpath_tags="/html/body/div[1]/div[2]/div/div/article/div[2]/ul"
+
+# ----------------------------------------------------------------------------------------------------------- 
+# Funktionen
+# ----------------------------------------------------------------------------------------------------------- 
+
+  # ---
+  # Die Funktion 'auto_url' sucht automatisch nach dem aktuellen Wordpress-Beitrag auf lucys-magazin.com ($LUCYURL)
+  # ---
+	auto_url () {
+	    echo "auto_url gestartet..."
+	    echo ""
+	    LUCYURL=https://www.lucys-magazin.com
+	    URL=$(wget -q -O - $LUCYURL | xmllint --html --xpath '/html/body/div[1]/div[2]/div/div/div[1]/div[3]/ul/li[1]/div/div/div[1]/h3/a/@href' - 2>/dev/null | sed 's/href="//' | sed 's/"//' | sed 's/ //')
+	    echo "Die Auto-URL: $URL"
+	    echo ""
+	}
+
+
+  # ---
+  # Die Funktion 'url_check' überprüft ob es sich um eine gültige URL handelt. (Relevant, wenn dem Script eine URL als Parameter übergeben wird.)
+  # Codeblock übernommen aus altem Script. Muss noch für die Verwendung als Funktion angepasst werden
+  # ---
+	url_check () {
+	 regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+	 string=$URL
+	    if [[ $string =~ $regex ]] 
+	      then
+		echo "Gültiger Link"
+		    URL=$(echo $URL) #Die URL wird mit dem Zwischenspeicher beladen, sofern die Schleife oberhalb der Meinung war, es handele sich um eine korrekte URL
+		echo "Die URL:" $URL
+		echo ""
+	    else
+	     echo "Die eingegebene Adresse ist nicht gültig"
+	     exit 1
+	    fi
+	}
+	
+  # ---
+  # Die Funktion 'get_bild' sucht in der angegebenen URL nach dem Beitragsbild und läd es mittels wget.
+  # ---
+	get_bild () {
+	    echo "Der Bilddownload mit WGET wird gestartet (get_bild)"
+	    echo ""
+	      #Der Link zum Beitragsbild wird per xmllint ermittelt (aus $URL):
+	  BILDLINK=$(wget -q -O - "$URL" | xmllint --html --xpath $xpath_bild - 2>/dev/null | sed 's/src="//' | sed 's/"//')
+	      #Beitragsbild wird in den tmp_folder geladen:
+	  wget $BILDLINK -O "$tmp_folder"/bilddownload.jpg
+
+		if [[ $? -ne 0 ]]; then 
+		    # wenn der Bilddownload fehlgeschlagen ist, wird davon ausgegangen, dass es sich um ein Youtube-Beitragsbild handelt. 
+		    # Dann wird der Teil gestartet, der Youtube-Thumbnails läd
+		   
+		    get_yt_thumb # Funktion 'get_yt_thumb' wird aufgerufen. (siehe nächste Funktion)
+
+		  echo "Es handelt sich um ein Youtube-Beitragsbild"
+		  echo ""
+		else
+		  echo "Es handelt sich um ein statisches Beitragsbild"
+		  echo ""
+
+
+		fi	
+	  #Optional: Bilddatei wird als Notification am Bildschirmrand ausgegeben (dient u.a. dem Debuging):
+	  notify-send -i "$tmp_folder"/bilddownload.jpg 'Bild wurde geladen' $BILDLINK
+
+	echo "Bilddownloadvorgang ist abgeschlossen"
+	echo ""
+	}
+
+  # ---
+  # 'get_yt_thumb' wird ggf. von 'get_bild' aufgerufen. Es läd ein Youtube-Thumbnail als Beitragsbild.
+  # ---
+	get_yt_thumb () {
+		  YTLINK=$(wget -q -O - $URL | xmllint --html --xpath $xpath_youtube - 2>/dev/null | sed 's/src="//' | sed 's/"//')
+		  YTID=$(echo $YTLINK | sed 's/https:\/\/www.youtube.com\/embed\///')
+
+		    echo "Versuche maxresdefault.jpg (thumbnail) zu laden..."
+		    echo ""
+		  YT_THUMB_URL=$(echo "https://i.ytimg.com/vi/"$YTID"/maxresdefault.jpg")
+		  wget $YT_THUMB_URL -O "$tmp_folder"/bilddownload.jpg
+		    if [[ $? -ne 0 ]]; then
+			 #Wenn wget ein Fehler ausgegeben hat, dann vermutlich weil maxresdefault nicht downloadbar war, in diesem Falle wird versucht hqdefault.jpg zu downloaden
+			 echo "wget-download fehlgeschlagen. Versuche hqdefault.jpg zu laden"
+			 echo ""
+			 YT_THUMB_URL=$(echo "https://i.ytimg.com/vi/"$YTID"/hqdefault.jpg")
+			 wget $YT_THUMB_URL -O "$tmp_folder"/bilddownload.jpg
+		     else
+			 #Wenn wget keinen Fehler ausgegeben hat, wird davon ausgegangen, dass der Download von maxresdefault.jpg geglückt ist.
+		       echo "maxresdefault.jpg wurde erfolgreich geladen"
+		       echo ""
+		    fi
+	}
+	
+  # ---
+  # 'get_headline' ermittelt die Überschrift des Blogbeitrages und schreibt es in die Variable 'headline'
+  # ---
+	get_headline () {
+	  wget -q -O - $URL | xmllint --html --xpath $xpath_header - 2>/dev/null > "$tmp_folder"/ueberschrift.txt
+	  read headline < "$tmp_folder"/ueberschrift.txt
+	  	#Gibt die Überschrift als Notifikation aus. Dient dem Debuging:
+	  notify-send "Die Überschrift lautet: $headline"
+	}
+
+  # ---
+  # 'get_kurztext' ermittelt die Überschrift des Blogbeitrages und schreibt es in die Variable 'headline'
+  # ---
+	get_kurztext () {
+	  #Die Anzahl der Zeichen sollte zwischen 500 und 700 liegen. Hier treten manchmal unbekannte Fehler auf (dann auf >700 verkleinern)
+	  zeichenzahl="700"
+	  
+	  wget -q -O - $URL | xmllint --html --xpath $xpath_absatz1 - 2>/dev/null | sed -e 's/<[^>]*>//g' > "$tmp_folder"/absatz1.txt
+	  wget -q -O - $URL | xmllint --html --xpath $xpath_absatz2 - 2>/dev/null | sed -e 's/<[^>]*>//g' > "$tmp_folder"/absatz2.txt
+	  read p1 < "$tmp_folder"/absatz1.txt
+	  read p2 < "$tmp_folder"/absatz2.txt
+	  kurztext="$p1"
+	  kurztext="$p1 $p2"
+	  echo $kurztext | head -c $zeichenzahl > "$tmp_folder"/kurztext.txt
+	  read kurztext < "$tmp_folder"/kurztext.txt
+	}
